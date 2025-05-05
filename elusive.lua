@@ -53,8 +53,8 @@ function init()
     
     start=start+.5
 
-    screen.move(128,10)
-    screen.text_right(..freq..":"..amp)
+    screen.move(25,60)
+    screen.text_right(freq..':'..amp)
     screen.update()
   end
   
