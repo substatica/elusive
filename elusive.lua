@@ -5,19 +5,22 @@ function init()
     height = 64
     width = 128
     baseline = 40
-    amp = {10,10,10,10,10,10}
-    freq = {10,10,10,10,10,10}
+    amp = {1,1,1,1,1,1}
+    freq = {1,1,1,1,1,1}
     start = 1
 
     active_waves = 1
     current_wave = 1
+ 
+    key_status = {0,0,0}
 
     audio.level_cut(1.0)
     audio.level_adc_cut(1)
     audio.level_eng_cut(1)
 
     for v = 1,6 do 
-        softcut.level(v,1.0)
+        softcut.level(v,0)
+        softcut.pre_level(current_wave, 0.75)
         softcut.level_slew_time(v,0.25)
         softcut.level_input_cut(v, 1, 1.0)
         softcut.pan(v, 0.0)
@@ -31,18 +34,18 @@ function init()
         softcut.fade_time(v, 0.1)
         softcut.rec(v, 1)
         softcut.rec_level(v, 1)
-        softcut.pre_level(v, 0)
+        softcut.pre_level(v, .75)
         softcut.position(v, 1)
         softcut.enable(v, 1)
     
-        softcut.filter_dry(v, 0.125);
-        softcut.filter_fc(v, 1200);
-        softcut.filter_lp(v, 0);
-        softcut.filter_bp(v, 1.0);
-        softcut.filter_rq(v, 2.0);
+        softcut.filter_dry(v, 0.125)
+        softcut.filter_fc(v, 1200)
+        softcut.filter_lp(v, 0)
+        softcut.filter_bp(v, 1.0)
+        softcut.filter_rq(v, 2.0)
     end
     
-    softcut.pre_level(current_wave, 0.75)
+    softcut.level(current_wave,1)
   end
   
   function redraw()
@@ -53,56 +56,84 @@ function init()
     end
     
     for w = 1,6 do
-        screen.level(15-w*2)
+        screen.level(13-w*2)
         if w <= active_waves then
-            softcut.pre_level(w, .75)
+            if current_wave == w then
+                screen.level(15)
+            end
+            softcut.level(w, 1)
             for x = 1,width do
-                y = baseline + amp[w] * math.sin(start+x/freq[w])
-                screen.pixel(x, y)
-                screen.fill()
+                amplitude = util.clamp((amp[w]-.5)*30,.1,45)
+                frequency = math.abs(freq[w])*10
+                y = (baseline+w*3) + amplitude * math.sin((start+(w-1)*20)+x/frequency)
+                -- screen.pixel(x, y)
+                -- screen.fill()
                 
                 -- filled
-                -- screen.move(x,64)
-                -- screen.line(x,y)
-                -- screen.stroke()
+                screen.move(x,64)
+                screen.line(x,y)
+                screen.stroke()
             end
         else
-            softcut.pre_level(w, 0)
+            softcut.level(w, 0)
         end
     end
 
     start=start+.25
 
-    screen.move(60,60)
-    screen.text_right(current_wave.."/"..active_waves.."/"..freq[current_wave]..'/'..amp[current_wave])
+    if active_waves > 0 then
+        --screen.move(60,60)
+        --screen.text_right(current_wave.."/"..active_waves..'l:'..amp[current_wave].."r:"..freq[current_wave])
+    end
     screen.update()
   end
 
   function key(n,z)
+    key_status[n] = z
     if z == 1 then
         if n == 3 then
             if active_waves < 6 then
                 active_waves = active_waves + 1
+                current_wave = active_waves
             end
         elseif n == 2 then
             if active_waves > 0 then
                 active_waves = active_waves - 1
+                current_wave = active_waves
             end
         end
     end
   end
   
   function enc(n,d)
-    if n == 2 then
-      amp[current_wave] = amp[current_wave] + d/10
-      level = amp[current_wave]/100
-      softcut.level(current_wave,level)
-    elseif n == 3 then
-      freq[current_wave] = freq[current_wave] + d/10
-      rate = freq[current_wave]/100
-      softcut.rate(current_wave,rate)
-    elseif n == 1 then
-      current_wave = util.clamp(current_wave + d,1,active_waves)
+    if key_status[1] == 1 then 
+        if n == 2 then
+            for x = 1,6 do
+                amp[x] = util.clamp(amp[x] + d/100, .50, 1.5)
+                level = amp[x]
+                softcut.pre_level(x,level)
+            end
+        elseif n == 3 then
+            for x = 1,6 do
+                freq[x] = util.clamp(freq[x] + d/100, -4, 4)
+                rate = freq[x]
+                softcut.rate(x, rate)
+            end
+        end
+    else 
+        if n == 2 then
+            amp[current_wave] = util.clamp(amp[current_wave] + d/100, .50, 1.5)
+            level = amp[current_wave]
+            softcut.pre_level(current_wave,level)
+        elseif n == 3 then
+            freq[current_wave] = util.clamp(freq[current_wave] + d/100, -4, 4)
+            rate = freq[current_wave]
+            softcut.rate(current_wave, rate)
+        end
+    end
+
+    if n == 1 then
+        current_wave = util.clamp(current_wave + d, 1, active_waves)
     end
   end
   
