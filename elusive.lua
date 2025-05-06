@@ -62,24 +62,27 @@ function init()
                 screen.level(15)
             end
             softcut.level(w, 1)
-            for x = 1,width do
+            for x = 1,width-1 do
                 amplitude = util.clamp((amp[w]-.5)*30,.1,45)
-                frequency = math.abs(freq[w])*10
-                y = (baseline+w*3) + amplitude * math.sin((start+(w-1)*20)+x/frequency)
+                frequency = 40-(math.abs(freq[w])*10)
+                current_start = start+(w-1)*20
+                y = (baseline+w*3) + amplitude * math.sin((current_start)+x/frequency)
                 -- screen.pixel(x, y)
                 -- screen.fill()
                 
                 -- filled
-                screen.move(x,64)
-                screen.line(x,y)
-                screen.stroke()
+                if y < 63 then
+                    screen.move(x,63)
+                    screen.line(x,y)
+                    screen.stroke()
+                end
             end
         else
             softcut.level(w, 0)
         end
     end
 
-    start=start+.25
+    start=start+.1
 
     if active_waves > 0 then
         --screen.move(60,60)
