@@ -1,8 +1,7 @@
 -- elusive
 
 function init()
-    y = 32
-    height = 64
+    height = 63
     width = 128
     baseline = 40
     amp = {1,1,1,1,1,1}
@@ -46,6 +45,7 @@ function init()
     end
     
     softcut.level(current_wave,1)
+
   end
   
   function redraw()
@@ -57,6 +57,7 @@ function init()
     
     for w = 1,6 do
         screen.level(13-w*2)
+        screen.line_cap("square")
         if w <= active_waves then
             if current_wave == w then
                 screen.level(15)
@@ -71,7 +72,7 @@ function init()
                 -- screen.fill()
                 
                 -- filled
-                if y < 63 then
+                if y < 64 then
                     screen.move(x,63)
                     screen.line(x,y)
                     screen.stroke()
@@ -86,8 +87,11 @@ function init()
 
     if active_waves > 0 then
         --screen.move(60,60)
-        --screen.text_right(current_wave.."/"..active_waves..'l:'..amp[current_wave].."r:"..freq[current_wave])
+        --screen.text_right(current_wave.."/"..active_waves..'l:'..amp[current_wave].."r:"  ..freq[current_wave])
     end
+    
+    draw_spray()
+    draw_wind()
     screen.update()
   end
 
@@ -148,4 +152,75 @@ function init()
     redraw()
   end
   re:start()
+  
+  -- spray
+spray_amount = 8
+  
+function init_spray()
+  xs,ys,vsy,vsx = {},{},{},{}
+  
+  xstart = math.random(127)
+  
+  for i=1,spray_amount do
+    xs[i] = xstart+math.random(10)-5
+    ys[i] = 63-math.random(5)
+    vsy[i] = math.random(3)-4
+    vsx[i] = math.random(2)-4
+  end
+  gravity = .1
+  
+  light = 15
+end
+
+init_spray()
+
+function draw_spray()
+  screen.level(15)
+  done = true
+  
+  for i=1,spray_amount do
+    screen.pixel(xs[i],ys[i])
+    
+    if ys[i] < 62 then
+      done = false
+    end
+  
+    xs[i] = (xs[i] + (vsx[i]*math.random(9,11)/10)) % 256
+    ys[i] = (ys[i] + (vsy[i]*math.random(9,11)/10)) % 128
+    vsy[i] = vsy[i] + gravity
+  end
+  screen.fill()
+  
+  if done then
+    init_spray()
+  end
+end
+  
+  -- wind (values and draw function)
+xw,yw = {},{}
+for i=1,16 do
+  xw[i] = math.random(256)
+  yw[i] = math.random(128)
+end
+vx,vy = math.random(10), math.random(10)
+ax,ay = 0,0
+
+function draw_wind()
+  screen.level(15)
+
+  for i=1,16 do
+    screen.move(xw[i],util.clamp(yw[i],0,63))
+    screen.line(xw[i]+vx,util.clamp(yw[i]+vy,0,63))
+    screen.stroke()
+    xw[i] = (xw[i] + (vx*math.random(5,11)/10)) % 256
+    yw[i] = (yw[i] + (vy*math.random(9,11)/10)) % 128
+  end
+  -- drop length
+  vx = math.cos(ax)*3
+  vy = math.abs(math.cos(ay)*4)
+  
+  ax = ax+0.01
+  ay = ay+0.004
+
+end
   
